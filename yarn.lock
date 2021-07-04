@@ -5648,11 +5648,6 @@ react-native-animatable@1.3.3:
   dependencies:
     prop-types "^15.7.2"
 
-react-native-background-task@^0.2.1:
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/react-native-background-task/-/react-native-background-task-0.2.1.tgz#9d110ed14b245e0d8b9ec8114ce24b33ddda65de"
-  integrity sha512-t5NvHWiqdIRf+KRUbeYH0QYSF3TTTe67g9TuOy/KbfU0KWqK1igLbQB/vw1o8nXZrWWIzSl9mSTG+2V/57TRzw==
-
 react-native-circular-progress@^1.3.7:
   version "1.3.7"
   resolved "https://registry.yarnpkg.com/react-native-circular-progress/-/react-native-circular-progress-1.3.7.tgz#cc430fbc612bd01134a8fc9667be107591ae6959"
@@ -5678,6 +5673,11 @@ react-native-device-info@^8.1.3:
   version "8.1.3"
   resolved "https://registry.yarnpkg.com/react-native-device-info/-/react-native-device-info-8.1.3.tgz#022fc01372632bf80c0a6d201aab53344efc715f"
   integrity sha512-73e3wiGFL8DvIXEd8x4Aq+mO8mZvHARwfYorIEu+X0trLHY92bP5Ict8DJHDjCQ0+HtAvpA4Wda2VoUVN1zh6Q==
+
+react-native-endless-background-service-without-notification@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/react-native-endless-background-service-without-notification/-/react-native-endless-background-service-without-notification-1.0.5.tgz#85660f4c03aabbd85d204abbaddd901b27d2d541"
+  integrity sha512-fxLHGLuiR0dXw4olEJBZkTJyUndd5KPmCMYZGvLj3wVJalpvA69rkfHF7lXj/pa/uwos8XVnmGAXK3ozv+YWSg==
 
 react-native-geolocation-service@^5.3.0-beta.1:
   version "5.3.0-beta.1"

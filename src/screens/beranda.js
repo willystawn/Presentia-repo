@@ -25,7 +25,6 @@ import {Loading} from '../components/loading';
 import dateConvert from '../modules/dateConvert.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PushNotification from 'react-native-push-notification';
-import BackgroundTask from 'react-native-background-task';
 import NetInfo from '@react-native-community/netinfo';
 
 const getData = async key => {
@@ -34,89 +33,89 @@ const getData = async key => {
   return data;
 };
 
-BackgroundTask.define(async () => {
-  const instance = await getData('@instance');
-  const mhs = await getData('@deviceRegistered');
+// BackgroundTask.define(async () => {
+//   const instance = await getData('@instance');
+//   const mhs = await getData('@deviceRegistered');
 
-  if (instance == null) {
-    BackgroundTask.finish();
-    return;
-  }
+//   if (instance == null) {
+//     BackgroundTask.finish();
+//     return;
+//   }
 
-  await NetInfo.fetch().then(async state => {
-    if (!state.isConnected) {
-      const today = await getData('@scheduleNow');
+//   await NetInfo.fetch().then(async state => {
+//     if (!state.isConnected) {
+//       const today = await getData('@scheduleNow');
 
-      if (today.length == 0) {
-        BackgroundTask.finish();
-        return;
-      }
+//       if (today.length == 0) {
+//         BackgroundTask.finish();
+//         return;
+//       }
 
-      const time = new Date().getHours() + '.' + new Date().getMinutes();
-      const currentExist = today[0]?.name.find((el, id) => {
-        time > today[0]?.start[id] && time < today?.end[id];
-      });
+//       const time = new Date().getHours() + '.' + new Date().getMinutes();
+//       const currentExist = today[0]?.name.find((el, id) => {
+//         time > today[0]?.start[id] && time < today?.end[id];
+//       });
 
-      if (!currentExist) {
-        return;
-      }
+//       if (!currentExist) {
+//         return;
+//       }
 
-      PushNotification.localNotification({
-        channelId: 'Presentia',
-        invokeApp: true,
-        title: currentExist,
-        message: 'Jangan lupa absen',
-        userInfo: {},
-        playSound: false,
-        soundName: 'default',
-        number: 10,
-        repeatType: 'day',
-      });
+//       PushNotification.localNotification({
+//         channelId: 'Presentia',
+//         invokeApp: true,
+//         title: currentExist,
+//         message: 'Jangan lupa absen',
+//         userInfo: {},
+//         playSound: false,
+//         soundName: 'default',
+//         number: 10,
+//         repeatType: 'day',
+//       });
 
-      return;
-    }
+//       return;
+//     }
 
-    const jadwal = await firestore()
-      .collection('schedule')
-      .doc(instance.instanceId)
-      .collection(mhs.kelas)
-      .get();
+//     const jadwal = await firestore()
+//       .collection('schedule')
+//       .doc(instance.instanceId)
+//       .collection(mhs.kelas)
+//       .get();
 
-    const now = new Date().getDay();
-    const today = jadwal
-      .filter(el => el.name.length != 0)
-      .filter(el => el.id == now);
+//     const now = new Date().getDay();
+//     const today = jadwal
+//       .filter(el => el.name.length != 0)
+//       .filter(el => el.id == now);
 
-    if (today.length == 0) {
-      return;
-    }
+//     if (today.length == 0) {
+//       return;
+//     }
 
-    const time = new Date().getHours() + '.' + new Date().getMinutes();
-    const currentExist = today[0].name.find((el, id) => {
-      time > today[0].start[id] && time < today.end[id];
-    });
+//     const time = new Date().getHours() + '.' + new Date().getMinutes();
+//     const currentExist = today[0].name.find((el, id) => {
+//       time > today[0].start[id] && time < today.end[id];
+//     });
 
-    if (!currentExist) {
-      return;
-    }
+//     if (!currentExist) {
+//       return;
+//     }
 
-    PushNotification.localNotification({
-      channelId: 'Presentia',
-      invokeApp: true,
-      title: currentExist,
-      message: 'Jangan lupa absen',
-      userInfo: {},
-      playSound: false,
-      soundName: 'default',
-      number: 10,
-      repeatType: 'day',
-    });
+//     PushNotification.localNotification({
+//       channelId: 'Presentia',
+//       invokeApp: true,
+//       title: currentExist,
+//       message: 'Jangan lupa absen',
+//       userInfo: {},
+//       playSound: false,
+//       soundName: 'default',
+//       number: 10,
+//       repeatType: 'day',
+//     });
 
-    return;
-  });
+//     return;
+//   });
 
-  BackgroundTask.finish();
-});
+//   BackgroundTask.finish();
+// });
 
 export const Beranda = ({route, nav}) => {
   const [loading, setLoading] = useState(true);
@@ -235,9 +234,6 @@ export const Beranda = ({route, nav}) => {
   useEffect(() => {
     const waitContent = firstReload();
     if (waitContent) {
-      BackgroundTask.schedule({
-        period: 1000,
-      });
       setLoading(false);
     }
   }, []);
