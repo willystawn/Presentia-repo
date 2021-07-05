@@ -160,8 +160,8 @@ export const Absen = ({route, nav}) => {
 
       setStat({
         H: statAbsen.filter(el => el == 'H').length,
-        S: statAbsen.filter(el => el == 'S').length,
-        I: statAbsen.filter(el => el == 'I').length,
+        S: statAbsen.filter(el => (el == el[0]) == 'S').length,
+        I: statAbsen.filter(el => (el == el[0]) == 'I').length,
         A: statMeet.length - statAbsen.filter(el => true).length,
       });
 
@@ -264,7 +264,8 @@ export const Absen = ({route, nav}) => {
         );
         return;
       }
-      recordingAbsent('S');
+
+      recordingAbsent(`S:${absenInput}`);
       setProgress(100);
       setStatusText('Sudah Absen Sakit');
       setAbsentStatus(true);
@@ -279,7 +280,7 @@ export const Absen = ({route, nav}) => {
         );
         return;
       }
-      recordingAbsent('I');
+      recordingAbsent(`I:${absenInput}`);
       setProgress(100);
       setStatusText('Sudah Absen Izin');
       setAbsentStatus(true);
@@ -357,7 +358,7 @@ export const Absen = ({route, nav}) => {
     NetInfo.fetch().then(state => {
       if (!state.isConnected) {
         setStatusText('Tidak ada koneksi internet');
-        return resetStatus();
+        return;
       } else {
         let newest = absentNeed[0];
         newest[absentNeed[1].length] = type;
