@@ -24,98 +24,15 @@ import {Loading} from '../components/loading';
 
 import dateConvert from '../modules/dateConvert.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import PushNotification from 'react-native-push-notification';
 import NetInfo from '@react-native-community/netinfo';
+import messaging from '@react-native-firebase/messaging';
+import PushNotification from 'react-native-push-notification';
 
 const getData = async key => {
   const val = await AsyncStorage.getItem(key);
   const data = JSON.parse(val);
   return data;
 };
-
-// BackgroundTask.define(async () => {
-//   const instance = await getData('@instance');
-//   const mhs = await getData('@deviceRegistered');
-
-//   if (instance == null) {
-//     BackgroundTask.finish();
-//     return;
-//   }
-
-//   await NetInfo.fetch().then(async state => {
-//     if (!state.isConnected) {
-//       const today = await getData('@scheduleNow');
-
-//       if (today.length == 0) {
-//         BackgroundTask.finish();
-//         return;
-//       }
-
-//       const time = new Date().getHours() + '.' + new Date().getMinutes();
-//       const currentExist = today[0]?.name.find((el, id) => {
-//         time > today[0]?.start[id] && time < today?.end[id];
-//       });
-
-//       if (!currentExist) {
-//         return;
-//       }
-
-//       PushNotification.localNotification({
-//         channelId: 'Presentia',
-//         invokeApp: true,
-//         title: currentExist,
-//         message: 'Jangan lupa absen',
-//         userInfo: {},
-//         playSound: false,
-//         soundName: 'default',
-//         number: 10,
-//         repeatType: 'day',
-//       });
-
-//       return;
-//     }
-
-//     const jadwal = await firestore()
-//       .collection('schedule')
-//       .doc(instance.instanceId)
-//       .collection(mhs.kelas)
-//       .get();
-
-//     const now = new Date().getDay();
-//     const today = jadwal
-//       .filter(el => el.name.length != 0)
-//       .filter(el => el.id == now);
-
-//     if (today.length == 0) {
-//       return;
-//     }
-
-//     const time = new Date().getHours() + '.' + new Date().getMinutes();
-//     const currentExist = today[0].name.find((el, id) => {
-//       time > today[0].start[id] && time < today.end[id];
-//     });
-
-//     if (!currentExist) {
-//       return;
-//     }
-
-//     PushNotification.localNotification({
-//       channelId: 'Presentia',
-//       invokeApp: true,
-//       title: currentExist,
-//       message: 'Jangan lupa absen',
-//       userInfo: {},
-//       playSound: false,
-//       soundName: 'default',
-//       number: 10,
-//       repeatType: 'day',
-//     });
-
-//     return;
-//   });
-
-//   BackgroundTask.finish();
-// });
 
 export const Beranda = ({route, nav}) => {
   const [loading, setLoading] = useState(true);
@@ -236,6 +153,21 @@ export const Beranda = ({route, nav}) => {
     if (waitContent) {
       setLoading(false);
     }
+
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      PushNotification.localNotification({
+        channelId: 'Presentia',
+        invokeApp: true,
+        title: `Halo, ${data[0]}`,
+        message: 'Kamu mempunyai informasi baru. Ketuk untuk membuka',
+        userInfo: {},
+        playSound: true,
+        soundName: 'default',
+        number: 10,
+      });
+    });
+
+    return unsubscribe;
   }, []);
 
   useFocusEffect(
@@ -338,13 +270,13 @@ export const Beranda = ({route, nav}) => {
             <View style={{flexDirection: 'row', marginTop: 15}}>
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => setModal(false)}
+                onPress={() => BackHandler.exitApp()}
                 style={{
                   flex: 1,
-                  backgroundColor: '#FFF',
                   paddingVertical: 10,
                   borderRadius: 10,
                   marginHorizontal: 5,
+                  backgroundColor: '#FFF',
                 }}>
                 <Text
                   style={{
@@ -353,18 +285,19 @@ export const Beranda = ({route, nav}) => {
                     fontFamily: 'Sarabun-Bold',
                     fontSize: 15,
                   }}>
-                  Batal
+                  Tutup Presentia
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => BackHandler.exitApp()}
+                onPress={() => setModal(false)}
                 style={{
                   flex: 1,
+                  backgroundColor: '#119DA4',
                   paddingVertical: 10,
                   borderRadius: 10,
                   marginHorizontal: 5,
-                  backgroundColor: '#119DA4',
                 }}>
                 <Text
                   style={{
@@ -373,7 +306,7 @@ export const Beranda = ({route, nav}) => {
                     fontFamily: 'Sarabun-Bold',
                     fontSize: 15,
                   }}>
-                  Tutup Presentia
+                  Batal
                 </Text>
               </TouchableOpacity>
             </View>

@@ -8,18 +8,22 @@ import {
   TouchableHighlight,
   Image,
   TextInput,
-  Pressable,
 } from 'react-native';
 import PushNotification, {Importance} from 'react-native-push-notification';
 import NetInfo from '@react-native-community/netinfo';
 import {StackActions} from '@react-navigation/native';
+import messaging from '@react-native-firebase/messaging';
+
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Modal from 'react-native-modal';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DeviceInfo from 'react-native-device-info';
+
 import {sha256} from 'react-native-sha256';
 import {global} from '../styles/global';
 import {Loading} from '../components/loading';
+
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 
@@ -54,7 +58,7 @@ PushNotification.createChannel({
   playSound: false,
   soundName: 'default',
   importance: Importance.HIGH,
-  vibrate: true,
+  vibrate: false,
 });
 
 auth()
@@ -188,6 +192,14 @@ export const Registrasi = ({nav}) => {
       .doc(mhsId)
       .get();
 
+    await messaging()
+      .subscribeToTopic(mhsKelas)
+      .then(() => console.log('Subscribed to mhs kelas!'));
+
+    await messaging()
+      .subscribeToTopic(instance.instanceId)
+      .then(() => console.log('Subscribed to instansi'));
+
     const localAccount = await storeData('@deviceRegistered', mhs._data);
 
     const task = await storeData('@task', tugas);
@@ -210,6 +222,37 @@ export const Registrasi = ({nav}) => {
       setProcess(false);
       return;
     }
+
+    const activeSchedule = jadwal.filter(el => el.name.length != 0);
+    PushNotification.cancelAllLocalNotifications();
+
+    activeSchedule.forEach(el => {
+      el.start.forEach((er, i) => {
+        let fireDate = new Date();
+        fireDate.setDate(
+          fireDate.getDate() + ((parseInt(el.id) + 7 - fireDate.getDay()) % 7),
+        );
+        let time = er.split('.');
+
+        fireDate.setHours(time[0]);
+        fireDate.setMinutes(time[1]);
+        fireDate.setSeconds(0);
+
+        console.log(`${el.name[i]}, ${fireDate}`);
+        PushNotification.localNotificationSchedule({
+          channelId: 'Presentia',
+          invokeApp: true,
+          title: el.name[i],
+          message: 'Jangan lupa absen ya!',
+          userInfo: {},
+          playSound: false,
+          date: fireDate,
+          soundName: 'default',
+          number: 10,
+          allowWhileIdle: true,
+        });
+      });
+    });
 
     if (reg) {
       setMsg({

@@ -796,7 +796,7 @@ export const Absen = ({route, nav}) => {
               placeholderTextColor="#AAA"
               onChangeText={teks => setAbsenInput(teks)}
               style={{
-                width: '95%',
+                width: '100%',
                 borderRadius: 10,
                 backgroundColor: '#EEE',
                 color: '#AAA',
@@ -814,7 +814,7 @@ export const Absen = ({route, nav}) => {
                 : trio.type == 'tutup'
                 ? '#119DA4'
                 : '#DDD',
-              width: '95%',
+              width: '100%',
               padding: 10,
               marginTop: 10,
               borderRadius: 10,

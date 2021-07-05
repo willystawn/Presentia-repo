@@ -1,4 +1,16 @@
 import firebase from '@react-native-firebase/app';
+import messaging from '@react-native-firebase/messaging';
+
+async function requestUserPermission() {
+  const authStatus = await messaging().requestPermission();
+  const enabled =
+    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+  if (enabled) {
+    console.log('Authorization status:', authStatus);
+  }
+}
 
 const firebaseConfig = {
   apiKey: 'AIzaSyB-QgRCpeIuu8yW5mbjOu-eP1kStiZSNGo',
@@ -10,6 +22,11 @@ const firebaseConfig = {
   measurementId: 'G-DGLE98332P',
 };
 
-firebase.initializeApp(firebaseConfig);
+const init = async () => {
+  firebase.initializeApp(firebaseConfig);
+  await requestUserPermission();
+};
+
+init();
 
 export default firebase;

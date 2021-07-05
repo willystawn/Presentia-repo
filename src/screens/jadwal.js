@@ -61,14 +61,14 @@ export const Jadwal = ({route, nav}) => {
       BackHandler.removeEventListener('hardwareBackPressd', backAction);
   }, []);
 
-  const renderTomorrowSchedule = time =>
-    time.map(el => {
+  const renderTomorrowSchedule = name =>
+    name.map((el, id) => {
       return (
-        <Text key={el.name} style={global.cardTextMain}>
+        <Text key={el} style={global.cardTextMain}>
           <Text style={global.cardTextGrey}>
-            {el.start}-{el.end}
+            {tomorrowSchedule?.start[id]}-{tomorrowSchedule?.end[id]}
           </Text>{' '}
-          • {el.name}
+          • {el}
         </Text>
       );
     });
@@ -135,7 +135,7 @@ export const Jadwal = ({route, nav}) => {
               <Text style={global.cardTextGrey}>{tomorrowSchedule.day}</Text>
               <View style={global.divider} />
 
-              {renderTomorrowSchedule(tomorrowSchedule.time)}
+              {renderTomorrowSchedule(tomorrowSchedule.name)}
             </View>
           </View>
         )}

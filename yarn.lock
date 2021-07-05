@@ -1178,6 +1178,11 @@
   resolved "https://registry.yarnpkg.com/@react-native-firebase/firestore/-/firestore-11.5.0.tgz#3e0349891cb908fe7d24f9b3c1315ff6ffd8e3d6"
   integrity sha512-yZv5bxTNICckRtEucb9SSX0slXN4CbN5ZT7tFh9Pm1CTEtU2jVcSC7qhG5l5SqmcoMOBnFavm8Mbti6BY5/1cg==
 
+"@react-native-firebase/messaging@^12.1.0":
+  version "12.1.0"
+  resolved "https://registry.yarnpkg.com/@react-native-firebase/messaging/-/messaging-12.1.0.tgz#eb74e37edabd0c392e28f6df622adafeb1617e23"
+  integrity sha512-8kL2Gs5N6o4aJdeoNrrYnmFvMms+H+mjj3ttlQLWobN7hy7fLCD9sbahJR9W3jzSoOb+XTaxk6Xf3PzVBBB7Mw==
+
 "@react-native/assets@1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@react-native/assets/-/assets-1.0.0.tgz#c6f9bf63d274bafc8e970628de24986b30a55c8e"
@@ -5673,11 +5678,6 @@ react-native-device-info@^8.1.3:
   version "8.1.3"
   resolved "https://registry.yarnpkg.com/react-native-device-info/-/react-native-device-info-8.1.3.tgz#022fc01372632bf80c0a6d201aab53344efc715f"
   integrity sha512-73e3wiGFL8DvIXEd8x4Aq+mO8mZvHARwfYorIEu+X0trLHY92bP5Ict8DJHDjCQ0+HtAvpA4Wda2VoUVN1zh6Q==
-
-react-native-endless-background-service-without-notification@^1.0.5:
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/react-native-endless-background-service-without-notification/-/react-native-endless-background-service-without-notification-1.0.5.tgz#85660f4c03aabbd85d204abbaddd901b27d2d541"
-  integrity sha512-fxLHGLuiR0dXw4olEJBZkTJyUndd5KPmCMYZGvLj3wVJalpvA69rkfHF7lXj/pa/uwos8XVnmGAXK3ozv+YWSg==
 
 react-native-geolocation-service@^5.3.0-beta.1:
   version "5.3.0-beta.1"
