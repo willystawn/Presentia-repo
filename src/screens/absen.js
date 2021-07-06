@@ -33,22 +33,8 @@ import {sha256} from 'react-native-sha256';
 import {inside} from '../modules/pointInPolygon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
 
 moment.locale('id');
-
-auth()
-  .signInAnonymously()
-  .then(() => {
-    console.log('User signed in anonymously');
-  })
-  .catch(error => {
-    if (error.code === 'auth/operation-not-allowed') {
-      console.log('Enable anonymous in your firebase console.');
-    }
-
-    console.error(error);
-  });
 
 export const Absen = ({route, nav}) => {
   let deviceInformation = [
@@ -125,23 +111,22 @@ export const Absen = ({route, nav}) => {
         return true;
       }
 
-      const now = new Date().getHours() + '.' + new Date().getMinutes();
-
-      const currentExist = today[0].name.find((el, id) => {
-        now > today[0].start[id] && now < today.end[id];
-      });
+      const now = moment().format('LT');
+      const currentExist = today[0]?.name.filter(
+        (el, id) => now > today[0].start[id] && now < today[0].end[id],
+      );
 
       let checkAbsent;
-      if (!currentExist) {
+      if (currentExist.length == 0) {
         setStatusText(' ');
         setCurrentMatkul({noAbsence: true});
         setAbsening(true);
       } else {
-        const currentIndex = today[0].name.indexOf(currentExist);
+        const currentIndex = today[0].name.indexOf(currentExist[0]);
         setCurrentMatkul({
           start: today[0].start[currentIndex],
           end: today[0].end[currentIndex],
-          name: currentExist,
+          name: currentExist[0],
           onlineAbsent: today[0].onlineAbsent[currentIndex],
         });
         setSInstansi(instance);
@@ -171,7 +156,7 @@ export const Absen = ({route, nav}) => {
       if (checkAbsent != undefined) {
         if (checkAbsent.length == currentAbsentRecords.length) {
           if (checkAbsent[checkAbsent.length] != moment().format('L')) {
-            setStatusText('Dosen belum memulai absensi pertemuan hari ini');
+            setStatusText('Dosen belum memulai absensi');
           } else {
             setStatusText('Sudah Absen');
           }
@@ -179,6 +164,7 @@ export const Absen = ({route, nav}) => {
           setAbsentStatus(true);
           return true;
         }
+        setStatusText('Belum absen');
       }
 
       return true;
@@ -515,7 +501,7 @@ export const Absen = ({route, nav}) => {
       ToastAndroid.show('Kalimat tidak sesuai', ToastAndroid.SHORT);
       return;
     }
-    setStatusText('Sudah Absen Online');
+    setStatusText('Sudah Absen Daring');
 
     recordingAbsent('H');
     setProgress(100);
@@ -544,7 +530,7 @@ export const Absen = ({route, nav}) => {
       btnTitle: 'Izin',
       titleModal: 'Sampaikan perizinan',
       contentModal:
-        'Masukan URL seperti gambar, surat izin, atau dokumen pendukung lainnya yang telah di unggah di Drive.\n\nCatatan:\nPastikan hak akses berbagi file tersebut dibuka dan keputusan akhir absensi berada di dosen yang bersangkutan.',
+        'Masukkan URL seperti gambar, surat izin, atau dokumen pendukung lainnya yang telah di unggah di Drive.\n\nCatatan:\nPastikan hak akses berbagi file tersebut dibuka dan keputusan akhir absensi berada di dosen yang bersangkutan.',
       buttonModal: 'Saya izin',
       input: true,
       type: 'izin',
@@ -554,7 +540,7 @@ export const Absen = ({route, nav}) => {
       btnTitle: 'Sakit',
       titleModal: 'Kabarkan kondisimu',
       contentModal:
-        'Masukan URL seperti gambar, surat keterangan dokter, atau dokumen pendukung lainnya yang telah di unggah di Drive.\n\nCatatan:\nPastikan hak akses berbagi file tersebut dibuka dan keputusan akhir absensi berada di dosen yang bersangkutan.',
+        'Masukkan URL seperti gambar, surat keterangan dokter, atau dokumen pendukung lainnya yang telah di unggah di Drive.\n\nCatatan:\nPastikan hak akses berbagi file tersebut dibuka dan keputusan akhir absensi berada di dosen yang bersangkutan.',
       buttonModal: 'Saya sakit',
       input: true,
       type: 'sakit',
@@ -564,7 +550,7 @@ export const Absen = ({route, nav}) => {
       btnTitle: 'Bantuan',
       titleModal: 'Pelajari Presentia',
       contentModal:
-        'Terdapat dua mode absensi yaitu Online dan Lokasi, tergantung dari Dosen mata kuliah yang bersangkutan.\n\nPresentia membutuhkan 5 detik untuk mendeteksi lokasimu dan apabila kamu kesulitan dalam absen mode lokasi, cobalah 3 sampai 4 kali, hindari absensi di tepi area, hidupkan dan matikan GPS serta matikan mode penghemat daya.\n\nPraktek terbaik adalah dengan membuka lokasimu di peta, lacak posisimu sampai berada di lokasi absensi lalu kembali absensi di Presentia.\n\nKamu dapat mengunggah buku panduan absensi di link dibawah ini.',
+        'Terdapat dua mode absensi yaitu Daring dan Lokasi, tergantung dari Dosen mata kuliah yang bersangkutan. Kamu akan dianggap Alfa saat belum absen dan akan berubah jika telah melakukan absensi.\n\nPresentia membutuhkan 5 detik untuk mendeteksi lokasimu dan apabila kamu kesulitan dalam absen mode lokasi, cobalah 3 sampai 4 kali, hindari absensi di tepi area, hidupkan dan matikan GPS serta matikan mode penghemat daya.\n\nPraktik terbaik adalah dengan membuka lokasimu di peta, lacak posisimu sampai berada di lokasi absensi lalu kembali absensi di Presentia.\n\nKamu dapat mengunggah buku panduan absensi di link dibawah ini.',
       buttonModal: 'Mengerti',
       input: false,
       type: 'tutup',
@@ -601,13 +587,10 @@ export const Absen = ({route, nav}) => {
     if (!currentMatkul?.noAbsence) {
       return (
         <>
-          <Text style={global.absentTitle}>
-            {currentMatkul?.time?.name || ''}
-          </Text>
+          <Text style={global.absentTitle}>{currentMatkul?.name || ''}</Text>
           <Text style={global.absentTime}>
             {moment().format('dddd, Do MMMM YYYY')} •{' '}
-            {currentMatkul?.time?.start || ''} -{' '}
-            {currentMatkul?.time?.end || ''}
+            {currentMatkul?.start || ''} - {currentMatkul?.end || ''}
           </Text>
         </>
       );
@@ -631,9 +614,8 @@ export const Absen = ({route, nav}) => {
           description={
             currentMatkul.noAbsence
               ? ' '
-              : 'Mode absensi • ' + currentMatkul.onlineAbsent
-              ? 'Daring'
-              : 'Lokasi'
+              : 'Mode absensi • ' +
+                (currentMatkul?.onlineAbsent ? 'Daring' : 'Lokasi')
           }
         />
         <View style={{flex: 0.7}}>

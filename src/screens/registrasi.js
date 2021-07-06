@@ -27,22 +27,7 @@ import {Loading} from '../components/loading';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 
-let notificationToken;
-
 PushNotification.configure({
-  onRegister: function (token) {
-    notificationToken = token.token;
-  },
-  onNotification: function (notification) {
-    console.log('NOTIFICATION:', notification);
-    notification.finish(PushNotificationIOS.FetchResult.NoData);
-  },
-
-  onAction: function (notification) {
-    console.log('ACTION:', notification.action);
-    console.log('NOTIFICATION:', notification);
-  },
-
   onRegistrationError: function (err) {
     console.error(err.message, err);
   },
@@ -105,37 +90,45 @@ export const Registrasi = ({nav}) => {
 
   const checkConnectionDeviceInfoAndDatabases = async () => {
     try {
-      const account = await getData('@deviceRegistered');
       const deviceId = await sha256(deviceInformation);
-      if (account !== null) {
-        if (account.device === deviceId) {
-          try {
-            const instance = await getData('@instance');
-            NetInfo.fetch().then(async state => {
-              if (!state.isConnected) {
-                ToastAndroid.show(
-                  'Kamu tidak memiliki koneksi internet!',
-                  ToastAndroid.SHORT,
-                );
-                return false;
-              }
 
+      return await NetInfo.fetch().then(async state => {
+        if (!state.isConnected) {
+          ToastAndroid.show(
+            'Kamu tidak memiliki koneksi internet!',
+            ToastAndroid.SHORT,
+          );
+          return false;
+        }
+
+        const serverAccount = await firestore()
+          .collection('devices')
+          .doc(deviceId)
+          .get();
+
+        if (serverAccount.exists) {
+          try {
+            const account = await getData('@deviceRegistered');
+            const instance = await getData('@instance');
+
+            if (account != null) {
               await syncDbToLocal(
                 instance,
                 account.uniqueId,
                 account.kelas,
                 false,
               );
+
               return true;
-            });
-            return true;
+            }
+
+            return false;
           } catch (error) {
             console.log(error.message);
           }
         }
-
         return false;
-      }
+      });
     } catch (error) {
       console.log(error.message);
     }
@@ -184,7 +177,6 @@ export const Registrasi = ({nav}) => {
       .sort((a, b) => a.id - b.id);
 
     const jadwalSekarang = jadwal.filter(el => el.id == new Date().getDay());
-
     const mhs = await firestore()
       .collection('mahasiswa')
       .doc(instance.instanceId)
@@ -238,19 +230,38 @@ export const Registrasi = ({nav}) => {
         fireDate.setMinutes(time[1]);
         fireDate.setSeconds(0);
 
-        console.log(`${el.name[i]}, ${fireDate}`);
-        PushNotification.localNotificationSchedule({
-          channelId: 'Presentia',
-          invokeApp: true,
-          title: el.name[i],
-          message: 'Jangan lupa absen ya!',
-          userInfo: {},
-          playSound: false,
-          date: fireDate,
-          soundName: 'default',
-          number: 10,
-          allowWhileIdle: true,
-        });
+        if (el.id != new Date().getDay()) {
+          PushNotification.localNotificationSchedule({
+            channelId: 'Presentia',
+            invokeApp: true,
+            title: el.name[i],
+            message: 'Jangan lupa absen ya!',
+            userInfo: {},
+            playSound: false,
+            date: fireDate,
+            soundName: 'default',
+            number: 10,
+            allowWhileIdle: true,
+          });
+          return;
+        }
+
+        const now = new Date().getHours() + '.' + new Date().getMinutes();
+        if (now == el.start[i]) {
+          PushNotification.localNotificationSchedule({
+            channelId: 'Presentia',
+            invokeApp: true,
+            title: el.name[i],
+            message: 'Jangan lupa absen ya!',
+            userInfo: {},
+            playSound: false,
+            date: fireDate,
+            soundName: 'default',
+            number: 10,
+            allowWhileIdle: true,
+          });
+          return;
+        }
       });
     });
 
@@ -339,7 +350,7 @@ export const Registrasi = ({nav}) => {
       const deviceEntry = await sha256(deviceInformation);
 
       if (
-        instance._data.device.length > 0 &&
+        instance._data.device.length > 1 &&
         instance._data.device != deviceEntry
       ) {
         setMsg({
@@ -363,10 +374,10 @@ export const Registrasi = ({nav}) => {
 
       const devices = await firestore()
         .collection('devices')
-        .doc('device')
+        .doc(deviceEntry)
         .get();
 
-      if (devices._data.list.includes(deviceEntry)) {
+      if (devices.exists) {
         setMsg({
           iconName: 'cellphone-off',
           content: 'Perangkat sudah dipakai oleh mahasiswa lain.',
@@ -379,9 +390,9 @@ export const Registrasi = ({nav}) => {
       try {
         firestore()
           .collection('devices')
-          .doc('device')
-          .update({
-            list: firestore.FieldValue.arrayUnion(deviceEntry),
+          .doc(deviceEntry)
+          .set({
+            id: deviceEntry,
           })
           .then(() => {
             console.log('New Devices added!');
@@ -394,7 +405,6 @@ export const Registrasi = ({nav}) => {
           .doc(mhsId)
           .update({
             device: deviceEntry,
-            pushToken: notificationToken,
           })
           .then(() => {
             console.log('Mahasiswa registered!');

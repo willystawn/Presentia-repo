@@ -1,10 +1,12 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
   ScrollView,
+  RefreshControl,
   BackHandler,
   TextInput,
+  ToastAndroid,
   TouchableWithoutFeedback,
 } from 'react-native';
 import {Header} from '../components/header';
@@ -13,16 +15,24 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {global} from '../styles/global';
 import {CardTugas} from '../components/cardTugas';
 import {Loading} from '../components/loading';
+import NetInfo from '@react-native-community/netinfo';
 
 import dateConvert from '../modules/dateConvert.js';
 import {Empty} from '../components/empty';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import firestore from '@react-native-firebase/firestore';
 
 export const Tugas = ({route, nav}) => {
   const [query, setQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stugas, setSTugas] = useState([]);
   const refInput = useRef();
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    firstReload(true).then(() => setRefreshing(false));
+  }, []);
 
   const backAction = () => {
     nav.navigate('Beranda');
@@ -35,20 +45,45 @@ export const Tugas = ({route, nav}) => {
     return data;
   };
 
-  const firstReload = async () => {
+  const firstReload = async (internet = false) => {
+    const connection = await NetInfo.fetch();
+
     try {
       const mhs = await getData('@deviceRegistered');
-      const tugas = await getData('@task');
+      let tugas;
+
+      if (internet) {
+        let main = await getData('@instance');
+
+        if (!connection.isConnected) {
+          return ToastAndroid.show(
+            'Tidak ada koneksi internet',
+            ToastAndroid.SHORT,
+          );
+        }
+        const snapTugas = await firestore()
+          .collection('task')
+          .doc(main.instanceId)
+          .collection('tugas')
+          .get();
+        tugas = snapTugas.docs.map(doc => doc.data());
+      } else {
+        tugas = await getData('@task');
+      }
       if (mhs == null) {
         ToastAndroid.show('Anda tidak terdaftar', ToastAndroid.SHORT);
         await AsyncStorage.removeItem('@deviceRegistered');
         return BackHandler.exitApp();
       }
 
+      if (internet) {
+        ToastAndroid.show('Berhasil memperbarui', ToastAndroid.SHORT);
+      }
+
       setSTugas(tugas);
       return true;
     } catch (e) {
-      console.log(e.message);
+      ToastAndroid.show(`Terjadi kesalahan: ${e.message}`, ToastAndroid.SHORT);
       return false;
     }
   };
@@ -102,6 +137,13 @@ export const Tugas = ({route, nav}) => {
     <Loading green={true} />
   ) : (
     <ScrollView
+      refreshControl={
+        <RefreshControl
+          colors={['#119DA4']}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
       keyboardShouldPersistTaps="handled"
       style={{flex: 1}}
       contentContainerStyle={{paddingBottom: 70}}>

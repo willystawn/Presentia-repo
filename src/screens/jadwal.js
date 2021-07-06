@@ -1,5 +1,12 @@
-import React, {useState, useEffect} from 'react';
-import {View, Text, ScrollView, BackHandler} from 'react-native';
+import React, {useState, useEffect, useCallback} from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  BackHandler,
+  ToastAndroid,
+  RefreshControl,
+} from 'react-native';
 import {Header} from '../components/header';
 
 import {global} from '../styles/global';
@@ -7,6 +14,8 @@ import {CardJadwal} from '../components/cardJadwal';
 import {Empty} from '../components/empty';
 import {Loading} from '../components/loading';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
+import firestore from '@react-native-firebase/firestore';
 
 export const Jadwal = ({route, nav}) => {
   const [loading, setLoading] = useState(true);

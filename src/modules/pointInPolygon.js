@@ -136,7 +136,7 @@ function isInside(polygon, n, p) {
 //   return false;
 // }
 // This code is contributed by rag2127
-const inside = (pol, q) => {
+export const inside = (pol, q) => {
   const poligon = pol.map(el => new Point(el.latitude, el.longitude));
   const len = poligon.length;
   const point = new Point(q[0], q[1]);
@@ -146,5 +146,3 @@ const inside = (pol, q) => {
   }
   return false;
 };
-
-export default inside;

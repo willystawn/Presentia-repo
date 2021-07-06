@@ -3,6 +3,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {
   View,
   Text,
+  RefreshControl,
   ScrollView,
   ToastAndroid,
   BackHandler,
@@ -27,6 +28,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
+import firestore from '@react-native-firebase/firestore';
 
 const getData = async key => {
   const val = await AsyncStorage.getItem(key);
@@ -42,15 +44,73 @@ export const Beranda = ({route, nav}) => {
   const [stugas, setSTugas] = useState([]);
   const [data, setData] = useState(['', '', '']);
   const [smhs, setSMhs] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
   const [meet, setMeet] = useState({});
 
-  const firstReload = async () => {
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    firstReload(true).then(() => setRefreshing(false));
+  }, []);
+
+  const firstReload = async (internet = false) => {
+    const connection = await NetInfo.fetch();
+
     try {
-      const main = await getData('@instance');
-      const mhs = await getData('@deviceRegistered');
-      const tugas = await getData('@task');
-      const sekarang = await getData('@scheduleNow');
-      const pengumuman = await getData('@announcement');
+      let tugas, sekarang, pengumuman;
+      let main = await getData('@instance');
+      let mhs = await getData('@deviceRegistered');
+
+      if (internet) {
+        if (!connection.isConnected) {
+          return ToastAndroid.show(
+            'Tidak ada koneksi internet',
+            ToastAndroid.SHORT,
+          );
+        }
+
+        const mainSnap = await firestore()
+          .collection('instance')
+          .doc(main.instanceId)
+          .get();
+        main = mainSnap.data();
+
+        const mhsSnap = await firestore()
+          .collection('mahasiswa')
+          .doc(main.instanceId)
+          .collection('mhs')
+          .doc(mhs.uniqueId)
+          .get();
+        mhs = mhsSnap.data();
+
+        const snapPengumuman = await firestore()
+          .collection('announcement')
+          .doc(main.instanceId)
+          .collection('pengumuman')
+          .get();
+        pengumuman = snapPengumuman.docs.map(doc => doc.data());
+
+        const snapTugas = await firestore()
+          .collection('task')
+          .doc(main.instanceId)
+          .collection('tugas')
+          .get();
+        tugas = snapTugas.docs.map(doc => doc.data());
+
+        const snapJadwal = await firestore()
+          .collection('schedule')
+          .doc(main.instanceId)
+          .collection(mhs.kelas)
+          .get();
+
+        const jadwal = snapJadwal.docs
+          .map(doc => doc.data())
+          .sort((a, b) => a.id - b.id);
+        sekarang = jadwal.filter(el => el.id == new Date().getDay());
+      } else {
+        tugas = await getData('@task');
+        sekarang = await getData('@scheduleNow');
+        pengumuman = await getData('@announcement');
+      }
 
       if (mhs == null || main == null) {
         ToastAndroid.show('Anda tidak terdaftar', ToastAndroid.SHORT);
@@ -85,9 +145,13 @@ export const Beranda = ({route, nav}) => {
         }
       });
 
+      if (internet) {
+        ToastAndroid.show('Berhasil memperbarui', ToastAndroid.SHORT);
+      }
+
       return true;
     } catch (e) {
-      console.log(e.message);
+      ToastAndroid.show(`Terjadi kesalahan: ${e.message}`, ToastAndroid.SHORT);
       return false;
     }
   };
@@ -125,7 +189,7 @@ export const Beranda = ({route, nav}) => {
   const renderToday = () =>
     today?.start.map((el, id) => {
       const isAbsent =
-        smhs[today?.name[id]].length == meet[today?.name[id]].length
+        smhs[today?.name[id]]?.length == meet[today?.name[id]]?.length
           ? true
           : false;
 
@@ -188,7 +252,16 @@ export const Beranda = ({route, nav}) => {
   return loading ? (
     <Loading />
   ) : (
-    <ScrollView style={{flex: 1}} contentContainerStyle={{paddingBottom: 70}}>
+    <ScrollView
+      style={{flex: 1}}
+      refreshControl={
+        <RefreshControl
+          colors={['#119DA4']}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
+      contentContainerStyle={{paddingBottom: 70}}>
       <Header title="Beranda" description={data[0] + ' • ' + data[1]} />
       <View style={{flex: 0.7}}>
         <View style={global.wrapper}>
