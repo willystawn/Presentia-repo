@@ -19,7 +19,13 @@ import firestore from '@react-native-firebase/firestore';
 
 export const Jadwal = ({route, nav}) => {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [sjadwal, setSJadwal] = useState([]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    firstReload(true).then(() => setRefreshing(false));
+  }, []);
 
   const backAction = () => {
     nav.navigate('Beranda');
@@ -39,10 +45,34 @@ export const Jadwal = ({route, nav}) => {
     day => day.id == (now == 6 ? 0 : now + 1),
   );
 
-  const firstReload = async () => {
+  const firstReload = async (internet = false) => {
+    const connection = await NetInfo.fetch();
+
     try {
       const mhs = await getData('@deviceRegistered');
-      const jadwal = await getData('@schedule');
+      let jadwal;
+
+      if (internet) {
+        let main = await getData('@instance');
+
+        if (!connection.isConnected) {
+          return ToastAndroid.show(
+            'Tidak ada koneksi internet',
+            ToastAndroid.SHORT,
+          );
+        }
+        const snapJadwal = await firestore()
+          .collection('schedule')
+          .doc(main.instanceId)
+          .collection(mhs.kelas)
+          .get();
+
+        jadwal = snapJadwal.docs
+          .map(doc => doc.data())
+          .sort((a, b) => a.id - b.id);
+      } else {
+        jadwal = await getData('@schedule');
+      }
 
       if (mhs == null) {
         ToastAndroid.show('Anda tidak terdaftar', ToastAndroid.SHORT);
@@ -52,10 +82,12 @@ export const Jadwal = ({route, nav}) => {
 
       const cjadwal = jadwal.filter(el => el.name.length != 0);
       setSJadwal(cjadwal);
-
+      if (internet) {
+        ToastAndroid.show('Berhasil memperbarui', ToastAndroid.SHORT);
+      }
       return true;
     } catch (e) {
-      console.log(e.message);
+      ToastAndroid.show(`Terjadi kesalahan: ${e.message}`, ToastAndroid.SHORT);
       return false;
     }
   };
@@ -114,7 +146,16 @@ export const Jadwal = ({route, nav}) => {
   return loading ? (
     <Loading />
   ) : (
-    <ScrollView style={{flex: 1}} contentContainerStyle={{paddingBottom: 70}}>
+    <ScrollView
+      refreshControl={
+        <RefreshControl
+          colors={['#119DA4']}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
+      style={{flex: 1}}
+      contentContainerStyle={{paddingBottom: 70}}>
       <Header
         title="Jadwal"
         description="Jadwal terkini dengan perubahan terbaru"

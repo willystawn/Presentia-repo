@@ -11,6 +11,7 @@ import {
   BackHandler,
   useWindowDimensions,
   Animated,
+  RefreshControl,
   TouchableOpacity,
   LayoutAnimation,
   UIManager,
@@ -58,6 +59,7 @@ export const Absen = ({route, nav}) => {
   const [loading, setLoading] = useState(true);
   const [trio, setTrio] = useState({});
   const [sinstansi, setSInstansi] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
 
   const [absening, setAbsening] = useState(false);
   const [countDown, setCountDown] = useState(false);
@@ -65,6 +67,11 @@ export const Absen = ({route, nav}) => {
   const [mhs, setMhs] = useState({});
   const [absentNeed, setAbsentNeed] = useState([]);
   const [stat, setStat] = useState({});
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    firstReload(true).then(() => setRefreshing(false));
+  }, []);
 
   const backAction = () => {
     nav.navigate('Beranda');
@@ -82,8 +89,10 @@ export const Absen = ({route, nav}) => {
     return data;
   };
 
-  const firstReload = async () => {
+  const firstReload = async (internet = false) => {
+    const connection = await NetInfo.fetch();
     try {
+      let today;
       const Mhs = await getData('@deviceRegistered');
       const instance = await getData('@instance');
       const absentRecords = await firestore()
@@ -94,7 +103,29 @@ export const Absen = ({route, nav}) => {
         .get();
 
       const meet = absentRecords.data();
-      const jadwal = await getData('@scheduleNow');
+
+      if (internet) {
+        if (!connection.isConnected) {
+          return ToastAndroid.show(
+            'Tidak ada koneksi internet',
+            ToastAndroid.SHORT,
+          );
+        }
+
+        const snapJadwal = await firestore()
+          .collection('schedule')
+          .doc(instance.instanceId)
+          .collection(Mhs.kelas)
+          .get();
+
+        const jadwal = snapJadwal.docs
+          .map(doc => doc.data())
+          .sort((a, b) => a.id - b.id);
+
+        today = jadwal.filter(el => el.id == new Date().getDay());
+      } else {
+        today = await getData('@scheduleNow');
+      }
 
       if ((Mhs == null) | (instance == null)) {
         ToastAndroid.show('Anda tidak terdaftar', ToastAndroid.SHORT);
@@ -102,8 +133,6 @@ export const Absen = ({route, nav}) => {
         BackHandler.exitApp();
         return;
       }
-
-      const today = jadwal;
 
       if (!today) {
         setAbsening(true);
@@ -166,10 +195,12 @@ export const Absen = ({route, nav}) => {
         }
         setStatusText('Belum absen');
       }
-
+      if (internet) {
+        ToastAndroid.show('Berhasil memperbarui', ToastAndroid.SHORT);
+      }
       return true;
     } catch (e) {
-      console.log(e.message);
+      ToastAndroid.show(`Terjadi kesalahan: ${e.message}`, ToastAndroid.SHORT);
       return false;
     }
   };
@@ -606,6 +637,13 @@ export const Absen = ({route, nav}) => {
   ) : (
     <>
       <ScrollView
+        refreshControl={
+          <RefreshControl
+            colors={['#119DA4']}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
+        }
         keyboardShouldPersistTaps="handled"
         style={{flex: 1}}
         contentContainerStyle={{paddingBottom: 130}}>
