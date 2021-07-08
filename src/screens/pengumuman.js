@@ -79,10 +79,6 @@ export const Pengumuman = ({route, nav}) => {
         return BackHandler.exitApp();
       }
 
-      if (internet) {
-        ToastAndroid.show('Berhasil memperbarui', ToastAndroid.SHORT);
-      }
-
       setSPengumuman(pengumuman);
       return true;
     } catch (e) {

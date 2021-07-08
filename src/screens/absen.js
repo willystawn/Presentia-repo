@@ -23,6 +23,7 @@ import Geolocation from 'react-native-geolocation-service';
 import NetInfo from '@react-native-community/netinfo';
 import Modal from 'react-native-modal';
 import {Loading} from '../components/loading';
+import RadioForm from 'react-native-simple-radio-button';
 
 import {global} from '../styles/global';
 import {Header} from '../components/header';
@@ -67,6 +68,7 @@ export const Absen = ({route, nav}) => {
   const [mhs, setMhs] = useState({});
   const [absentNeed, setAbsentNeed] = useState([]);
   const [stat, setStat] = useState({});
+  const [titip, setTitip] = useState({type: '', uniqueId: ''});
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -93,7 +95,7 @@ export const Absen = ({route, nav}) => {
     const connection = await NetInfo.fetch();
     try {
       let today;
-      const Mhs = await getData('@deviceRegistered');
+      let Mhs = await getData('@deviceRegistered');
       const instance = await getData('@instance');
       const absentRecords = await firestore()
         .collection('absent')
@@ -111,6 +113,15 @@ export const Absen = ({route, nav}) => {
             ToastAndroid.SHORT,
           );
         }
+
+        const snapMhs = await firestore()
+          .collection('mahasiswa')
+          .doc(instance.instanceId)
+          .collection('mhs')
+          .doc(Mhs.uniqueId)
+          .get();
+
+        Mhs = snapMhs.data();
 
         const snapJadwal = await firestore()
           .collection('schedule')
@@ -160,7 +171,6 @@ export const Absen = ({route, nav}) => {
         });
         setSInstansi(instance);
         setMhs(Mhs);
-
         checkAbsent = meet[currentExist];
       }
 
@@ -174,8 +184,8 @@ export const Absen = ({route, nav}) => {
 
       setStat({
         H: statAbsen.filter(el => el == 'H').length,
-        S: statAbsen.filter(el => (el == el[0]) == 'S').length,
-        I: statAbsen.filter(el => (el == el[0]) == 'I').length,
+        S: statAbsen.filter(el => el[0] == 'S').length,
+        I: statAbsen.filter(el => el[0] == 'I').length,
         A: statMeet.length - statAbsen.filter(el => true).length,
       });
 
@@ -184,7 +194,7 @@ export const Absen = ({route, nav}) => {
 
       if (checkAbsent != undefined) {
         if (checkAbsent.length == currentAbsentRecords.length) {
-          if (checkAbsent[checkAbsent.length] != moment().format('L')) {
+          if (checkAbsent[checkAbsent.length - 1] != moment().format('L')) {
             setStatusText('Dosen belum memulai absensi');
           } else {
             setStatusText('Sudah Absen');
@@ -194,10 +204,10 @@ export const Absen = ({route, nav}) => {
           return true;
         }
         setStatusText('Belum absen');
+        setAbsening(false);
+        setAbsentStatus(false);
       }
-      if (internet) {
-        ToastAndroid.show('Berhasil memperbarui', ToastAndroid.SHORT);
-      }
+
       return true;
     } catch (e) {
       ToastAndroid.show(`Terjadi kesalahan: ${e.message}`, ToastAndroid.SHORT);
@@ -255,6 +265,50 @@ export const Absen = ({route, nav}) => {
       return ToastAndroid.show('Anda sudah absen', ToastAndroid.SHORT);
 
     // Cek mode absen
+
+    if (absentType == 'sakit') {
+      if (
+        absenInput.length < 5 ||
+        /^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$/.test(
+          absenInput,
+        ) == false
+      ) {
+        ToastAndroid.show(
+          'Mohon masukkan bukti bahwa anda sakit',
+          ToastAndroid.SHORT,
+        );
+        setAbsening(false);
+        return;
+      }
+
+      recordingAbsent(`S:${absenInput}`);
+      setProgress(100);
+      setStatusText('Sudah Absen Sakit');
+      setAbsentStatus(true);
+      return;
+    }
+
+    if (absentType == 'izin') {
+      if (
+        absenInput.length < 5 ||
+        /^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$/.test(
+          absenInput,
+        ) == false
+      ) {
+        ToastAndroid.show(
+          'Mohon masukkan bukti bahwa kamu izin',
+          ToastAndroid.SHORT,
+        );
+        setAbsening(false);
+        return;
+      }
+      recordingAbsent(`I:${absenInput}`);
+      setProgress(100);
+      setStatusText('Sudah Absen Izin');
+      setAbsentStatus(true);
+      return;
+    }
+
     setStatusText(step[0]);
     if (currentMatkul.onlineAbsent) {
       setTrio({
@@ -271,39 +325,8 @@ export const Absen = ({route, nav}) => {
       setAbsening(false);
       return;
     }
+
     setProgress(15);
-
-    if (absentType == 'sakit') {
-      if (absenInput.length < 5) {
-        ToastAndroid.show(
-          'Mohon masukkan bukti bahwa anda sakit',
-          ToastAndroid.SHORT,
-        );
-        return;
-      }
-
-      recordingAbsent(`S:${absenInput}`);
-      setProgress(100);
-      setStatusText('Sudah Absen Sakit');
-      setAbsentStatus(true);
-      return;
-    }
-
-    if (absentType == 'izin') {
-      if (absenInput.length < 5) {
-        ToastAndroid.show(
-          'Mohon masukkan bukti bahwa anda sakit',
-          ToastAndroid.SHORT,
-        );
-        return;
-      }
-      recordingAbsent(`I:${absenInput}`);
-      setProgress(100);
-      setStatusText('Sudah Absen Izin');
-      setAbsentStatus(true);
-      return;
-    }
-
     setCountDown(true);
     watchId.current = Geolocation.watchPosition(
       position => {
@@ -378,11 +401,11 @@ export const Absen = ({route, nav}) => {
         return;
       } else {
         let newest = absentNeed[0];
-        newest[absentNeed[1].length] = type;
+        newest[absentNeed[1].length - 1] = type;
 
         firestore()
           .collection('mahasiswa')
-          .doc(instance.instanceId)
+          .doc(sinstansi.instanceId)
           .collection('mhs')
           .doc(mhs.uniqueId)
           .update({
@@ -390,7 +413,7 @@ export const Absen = ({route, nav}) => {
           })
           .then(() => {
             setStat({...stat, [type]: stat[type] + 1});
-            console.log('Sukses Absent');
+            console.log('Sukses Absen');
           })
           .catch(err => {
             ToastAndroid.show(
@@ -399,6 +422,8 @@ export const Absen = ({route, nav}) => {
             );
           });
       }
+
+      firstReload(true);
     });
   };
 
@@ -525,6 +550,84 @@ export const Absen = ({route, nav}) => {
     setTrio({visible: false});
   };
 
+  const absentTitip = async () => {
+    if (
+      titip.uniqueId.length < 3 ||
+      absenInput.length < 3 ||
+      titip.type == ''
+    ) {
+      ToastAndroid.show('Mohon masukkan data dengan benar', ToastAndroid.SHORT);
+      return;
+    }
+
+    if (
+      /^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$/.test(
+        absenInput,
+      ) == false
+    ) {
+      ToastAndroid.show(
+        'Mohon masukkan URL bukti dengan dengan benar',
+        ToastAndroid.SHORT,
+      );
+      return;
+    }
+
+    const mhsTitipan = await firestore()
+      .collection('mahasiswa')
+      .doc(sinstansi.instanceId)
+      .collection('mhs')
+      .doc(titip.uniqueId)
+      .get();
+
+    if (!mhsTitipan.exists) {
+      ToastAndroid.show('Mahasiswa tidak ditemukan', ToastAndroid.SHORT);
+      return;
+    }
+
+    const mhst = mhsTitipan.data();
+    if (!mhst.trouble) {
+      ToastAndroid.show(
+        `${mhst.name} tidak mempunyai kendala dalam absensi`,
+        ToastAndroid.LONG,
+      );
+      return;
+    }
+
+    const matkul = currentMatkul?.name;
+    const newest = mhst[matkul];
+
+    if (newest.length == absentNeed[1].length) {
+      ToastAndroid.show(
+        `${mhst.name} sudah melakukan absensi`,
+        ToastAndroid.LONG,
+      );
+      return;
+    }
+    newest[absentNeed[1].length - 1] = titip.type + ':' + absenInput;
+
+    firestore()
+      .collection('mahasiswa')
+      .doc(sinstansi.instanceId)
+      .collection('mhs')
+      .doc(titip.uniqueId)
+      .update({
+        [currentMatkul?.name]: newest,
+      })
+      .then(() => {
+        ToastAndroid.show(
+          `Berhasil menitipkan absen ${mhst.name}`,
+          ToastAndroid.LONG,
+        );
+      })
+      .catch(err => {
+        ToastAndroid.show(
+          'Terjadi Kesalahan, mohon coba lagi',
+          ToastAndroid.SHORT,
+        );
+      });
+    setTrio({visible: false});
+  };
+
   const absentOnline = () => {
     if (
       absenInput !== 'Saya bersungguh-sungguh mengikuti perkuliahan dengan baik'
@@ -549,6 +652,8 @@ export const Absen = ({route, nav}) => {
         break;
       case 'online':
         absentOnline();
+      case 'titip':
+        absentTitip();
       default:
         setTrio({visible: false});
         break;
@@ -561,7 +666,7 @@ export const Absen = ({route, nav}) => {
       btnTitle: 'Izin',
       titleModal: 'Sampaikan perizinan',
       contentModal:
-        'Masukkan URL seperti gambar, surat izin, atau dokumen pendukung lainnya yang telah di unggah di Drive.\n\nCatatan:\nPastikan hak akses berbagi file tersebut dibuka dan keputusan akhir absensi berada di dosen yang bersangkutan.',
+        'Masukkan URL file yang telah diunggah di Drive. File dapat berupa gambar, surat izin atau dokumen pendukung lainnya.\n\nCatatan:\nPastikan hak akses berbagi file tersebut dibuka dan keputusan akhir absensi berada pada dosen yang bersangkutan.',
       buttonModal: 'Saya izin',
       input: true,
       type: 'izin',
@@ -571,7 +676,7 @@ export const Absen = ({route, nav}) => {
       btnTitle: 'Sakit',
       titleModal: 'Kabarkan kondisimu',
       contentModal:
-        'Masukkan URL seperti gambar, surat keterangan dokter, atau dokumen pendukung lainnya yang telah di unggah di Drive.\n\nCatatan:\nPastikan hak akses berbagi file tersebut dibuka dan keputusan akhir absensi berada di dosen yang bersangkutan.',
+        'Masukkan URL file yang telah diunggah di Drive. File dapat berupa gambar, surat izin atau dokumen pendukung lainnya.\n\nCatatan:\nPastikan hak akses berbagi file tersebut dibuka dan keputusan akhir absensi berada pada dosen yang bersangkutan.',
       buttonModal: 'Saya sakit',
       input: true,
       type: 'sakit',
@@ -581,7 +686,7 @@ export const Absen = ({route, nav}) => {
       btnTitle: 'Bantuan',
       titleModal: 'Pelajari Presentia',
       contentModal:
-        'Terdapat dua mode absensi yaitu Daring dan Lokasi, tergantung dari Dosen mata kuliah yang bersangkutan. Kamu akan dianggap Alfa saat belum absen dan akan berubah jika telah melakukan absensi.\n\nPresentia membutuhkan 5 detik untuk mendeteksi lokasimu dan apabila kamu kesulitan dalam absen mode lokasi, cobalah 3 sampai 4 kali, hindari absensi di tepi area, hidupkan dan matikan GPS serta matikan mode penghemat daya.\n\nPraktik terbaik adalah dengan membuka lokasimu di peta, lacak posisimu sampai berada di lokasi absensi lalu kembali absensi di Presentia.\n\nKamu dapat mengunggah buku panduan absensi di link dibawah ini.',
+        'Terdapat dua mode absensi yaitu Daring dan Lokasi, tergantung pada dosen mata kuliah yang bersangkutan. Kamu akan dianggap alfa saat belum absen dan akan berubah jika telah melakukan absensi.\n\nPresentia membutuhkan waktu 5 detik untuk mendeteksi lokasimu dan apabila kamu kesulitan dalam absen mode lokasi, cobalah 3 sampai 4 kali, hindari absensi di tepi area, matikan dan hidupkan kembali GPS serta matikan mode penghemat daya.\n\nPraktik terbaik adalah dengan membuka lokasimu di peta, lacak posisimu sampai berada di lokasi absensi lalu kembali absensi di Presentia.\n\nKamu dapat mengunduh buku panduan absensi melalui link di bawah ini.',
       buttonModal: 'Mengerti',
       input: false,
       type: 'tutup',
@@ -651,7 +756,7 @@ export const Absen = ({route, nav}) => {
           title="Absensi"
           description={
             currentMatkul.noAbsence
-              ? ' '
+              ? 'Seret ke bawah untuk menyegarkan'
               : 'Mode absensi • ' +
                 (currentMatkul?.onlineAbsent ? 'Daring' : 'Lokasi')
           }
@@ -709,13 +814,46 @@ export const Absen = ({route, nav}) => {
                   }
                   style={[
                     global.absentTime,
-                    {textAlign: 'center', color: '#b51941'},
+                    {
+                      textAlign: 'center',
+                      color: '#b51941',
+                      textDecorationLine: 'underline',
+                    },
                   ]}>
                   Lihat Lokasimu
                 </Text>
               )}
             </View>
           </View>
+          {mhs?.trusted && (
+            <View style={global.wrapper}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[
+                  global.absentBtn,
+                  {width: '30%', alignSelf: 'flex-end'},
+                ]}
+                onPress={() =>
+                  setTrio({
+                    title: 'Bantu temanmu',
+                    content:
+                      'Presentia ingin menjangkau semua mahasiswa yang terkendala perangkat melalui bantuanmu!',
+                    visible: true,
+                    btn: 'Sampaikan kehadirannya',
+                    input: true,
+                    type: 'titip',
+                    hideContextMenu: false,
+                  })
+                }>
+                <MaterialCommunityIcons
+                  name={'account-multiple-outline'}
+                  size={20}
+                  color="#119DA4"
+                />
+                <Text style={global.tripleBtn}>Titipan</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <View style={global.wrapper}>
             <View style={global.card}>
               <Text style={global.cardTitle}>Statistik kehadiranmu</Text>
@@ -795,7 +933,11 @@ export const Absen = ({route, nav}) => {
             {trio.content}
             {!trio.input && (
               <Text
-                onPress={() => Linking.openURL('https://snowfluke.github.io/')}
+                onPress={() =>
+                  Linking.openURL(
+                    'http://presentia.stmikkomputama.ac.id/#panduan',
+                  )
+                }
                 style={[
                   global.cardTextGrey,
                   {textAlign: 'left', textDecorationLine: 'underline'},
@@ -805,14 +947,46 @@ export const Absen = ({route, nav}) => {
               </Text>
             )}
           </Text>
+          {mhs?.trusted && (
+            <>
+              <RadioForm
+                style={{marginTop: 20}}
+                buttonColor={'#119DA4'}
+                formHorizontal={true}
+                labelColor={'#AAAAAA'}
+                ini
+                radio_props={[
+                  {label: 'Hadir', value: 'H'},
+                  {label: 'Sakit', value: 'S'},
+                  {label: 'Izin', value: 'I'},
+                ]}
+                initial={-1}
+                onPress={tipe => setTitip({...titip, type: tipe})}
+              />
+              <TextInput
+                maxLength={12}
+                placeholder="Masukkan nomor identitas di sini ..."
+                placeholderTextColor="#AAA"
+                onChangeText={nim => setTitip({...titip, uniqueId: nim})}
+                style={{
+                  width: '100%',
+                  borderRadius: 10,
+                  backgroundColor: '#EEE',
+                  color: '#AAA',
+                  textAlign: 'center',
+                  marginTop: 15,
+                }}
+              />
+            </>
+          )}
           {trio.input && (
             <TextInput
               maxLength={300}
               contextMenuHidden={trio.hideContextMenu ? true : false}
               placeholder={
                 trio.hideContextMenu
-                  ? 'Masukkan kejujuranmu disini ...'
-                  : 'Masukkan URL disini ...'
+                  ? 'Masukkan kejujuranmu di sini ...'
+                  : 'Masukkan URL bukti di sini ...'
               }
               placeholderTextColor="#AAA"
               onChangeText={teks => setAbsenInput(teks)}
@@ -828,11 +1002,15 @@ export const Absen = ({route, nav}) => {
           )}
           <TouchableOpacity
             onPress={() => handleTrioOnPress(trio.type)}
-            disabled={trio.type == 'tutup' ? false : absening}
+            disabled={
+              trio.type == 'tutup' || !currentMatkul?.noAbsence
+                ? false
+                : absening
+            }
             style={{
               backgroundColor: !absening
                 ? '#119DA4'
-                : trio.type == 'tutup'
+                : trio.type == 'tutup' || !currentMatkul?.noAbsence
                 ? '#119DA4'
                 : '#DDD',
               width: '100%',

@@ -36,14 +36,14 @@ PushNotification.configure({
 });
 
 PushNotification.createChannel({
-  channelId: 'Presentia',
+  channelId: 'presentia',
   channelName: 'Presentia Channel',
   channelDescription:
     'Channel untuk menampung notifikasi dari aplikasi Presentia',
   playSound: false,
   soundName: 'default',
   importance: Importance.HIGH,
-  vibrate: false,
+  vibrate: true,
 });
 
 auth()
@@ -151,7 +151,6 @@ export const Registrasi = ({nav}) => {
 
   const syncDbToLocal = async (instance, mhsId, mhsKelas, reg) => {
     const localInstance = await storeData('@instance', instance);
-
     const snapTugas = await firestore()
       .collection('task')
       .doc(instance.instanceId)
@@ -217,6 +216,7 @@ export const Registrasi = ({nav}) => {
 
     const activeSchedule = jadwal.filter(el => el.name.length != 0);
     PushNotification.cancelAllLocalNotifications();
+    PushNotification.removeAllDeliveredNotifications();
 
     activeSchedule.forEach(el => {
       el.start.forEach((er, i) => {
@@ -226,30 +226,30 @@ export const Registrasi = ({nav}) => {
         );
         let time = er.split('.');
 
-        fireDate.setHours(time[0]);
-        fireDate.setMinutes(time[1]);
+        fireDate.setHours(parseInt(time[0]));
+        fireDate.setMinutes(parseInt(time[1]));
         fireDate.setSeconds(0);
 
         if (el.id != new Date().getDay()) {
           PushNotification.localNotificationSchedule({
-            channelId: 'Presentia',
+            channelId: 'presentia',
             invokeApp: true,
             title: el.name[i],
-            message: 'Jangan lupa absen ya!',
+            message: 'Jangan lupa absen, ya!',
             userInfo: {},
             playSound: false,
             date: fireDate,
             soundName: 'default',
-            number: 10,
+            number: 2,
             allowWhileIdle: true,
           });
           return;
         }
 
         const now = new Date().getHours() + '.' + new Date().getMinutes();
-        if (now == el.start[i]) {
+        if (now <= el.start[i]) {
           PushNotification.localNotificationSchedule({
-            channelId: 'Presentia',
+            channelId: 'presentia',
             invokeApp: true,
             title: el.name[i],
             message: 'Jangan lupa absen ya!',
@@ -257,7 +257,7 @@ export const Registrasi = ({nav}) => {
             playSound: false,
             date: fireDate,
             soundName: 'default',
-            number: 10,
+            number: 2,
             allowWhileIdle: true,
           });
           return;
@@ -268,7 +268,7 @@ export const Registrasi = ({nav}) => {
     if (reg) {
       setMsg({
         iconName: 'check-circle',
-        content: 'Perangkat anda berhasil di daftarkan di Presentia!',
+        content: 'Perangkat kamu berhasil terdaftar di Presentia!',
         visible: true,
       });
       setProcess(false);
@@ -542,7 +542,7 @@ export const Registrasi = ({nav}) => {
                 {textDecorationLine: 'underline', textAlign: 'left'},
               ]}
               onPress={() =>
-                Linking.openURL('https://www.snowfluke.github.io/')
+                Linking.openURL('http://presentia.stmikkomputama.ac.id/')
               }>
               Selengkapnya
             </Text>

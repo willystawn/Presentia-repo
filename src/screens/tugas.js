@@ -76,10 +76,6 @@ export const Tugas = ({route, nav}) => {
         return BackHandler.exitApp();
       }
 
-      if (internet) {
-        ToastAndroid.show('Berhasil memperbarui', ToastAndroid.SHORT);
-      }
-
       setSTugas(tugas);
       return true;
     } catch (e) {

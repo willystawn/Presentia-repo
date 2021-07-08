@@ -126,28 +126,15 @@ export const Beranda = ({route, nav}) => {
       setSMhs(mhs);
       setData([mhs.name, mhs.uniqueId, main.instanceName]);
 
-      NetInfo.fetch().then(async state => {
-        if (!state.isConnected) {
-          if (!state.isConnected) {
-            return true;
-          }
-          const absentRecords = await firestore()
-            .collection('absent')
-            .doc(instance.instanceId)
-            .collection(Mhs.kelas)
-            .doc('absensi')
-            .get();
+      const absentRecords = await firestore()
+        .collection('absent')
+        .doc(main.instanceId)
+        .collection(mhs.kelas)
+        .doc('absensi')
+        .get();
 
-          const meet = absentRecords.data();
-          setMeet(meet);
-
-          return true;
-        }
-      });
-
-      if (internet) {
-        ToastAndroid.show('Berhasil memperbarui', ToastAndroid.SHORT);
-      }
+      const meet = absentRecords.data();
+      setMeet(meet);
 
       return true;
     } catch (e) {
@@ -188,8 +175,12 @@ export const Beranda = ({route, nav}) => {
 
   const renderToday = () =>
     today?.start.map((el, id) => {
+      const dayRecords = smhs[today?.name[id]] || [];
+      const lastIndex = dayRecords?.length - 1;
+      const meetLength = meet[today?.name[id]]?.length;
+
       const isAbsent =
-        smhs[today?.name[id]]?.length == meet[today?.name[id]]?.length
+        dayRecords.length == meetLength && dayRecords[lastIndex] != null
           ? true
           : false;
 
@@ -201,7 +192,12 @@ export const Beranda = ({route, nav}) => {
 
       return (
         <View key={today?.name[id]} style={global.jadwalContainer}>
-          <View style={global.jadwalStatusBelum}>{absentStatus}</View>
+          <View
+            style={
+              isAbsent ? global.jadwalStatusSudah : global.jadwalStatusBelum
+            }>
+            {absentStatus}
+          </View>
           <View style={{flex: 1, flexGap: 0}}>
             <Text style={{...global.cardTextMain, flex: 1}}>
               • {today?.start[id]}-{today?.end[id]}
@@ -220,7 +216,7 @@ export const Beranda = ({route, nav}) => {
 
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       PushNotification.localNotification({
-        channelId: 'Presentia',
+        channelId: 'presentia',
         invokeApp: true,
         title: `Halo, ${data[0]}`,
         message: 'Kamu mempunyai informasi baru. Ketuk untuk membuka',
@@ -266,6 +262,14 @@ export const Beranda = ({route, nav}) => {
       <View style={{flex: 0.7}}>
         <View style={global.wrapper}>
           <Text style={global.catTitle}>{data[2]} •</Text>
+          {smhs?.trusted && (
+            <View style={global.card}>
+              <Text style={global.cardTextGrey}>
+                Perangkat kamu telah dipercayai. Kamu bisa melakukan absensi
+                untuk mahasiswa lain yang terkendala perangkat.
+              </Text>
+            </View>
+          )}
         </View>
         <View style={global.wrapper}>
           <Text style={global.catTitle}>Jadwal Hari Ini</Text>
@@ -321,6 +325,13 @@ export const Beranda = ({route, nav}) => {
           />
         )}
         {!tugas && <Empty msg="Tidak ada tugas terbaru" />}
+
+        <View style={global.wrapper}>
+          <Text style={[global.cardLabel, {textAlign: 'center'}]}>
+            Presentia versi 1.0.0
+          </Text>
+        </View>
+
         <Modal
           backdropColor="#111"
           backdropOpacity={0.2}

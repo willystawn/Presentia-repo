@@ -82,9 +82,7 @@ export const Jadwal = ({route, nav}) => {
 
       const cjadwal = jadwal.filter(el => el.name.length != 0);
       setSJadwal(cjadwal);
-      if (internet) {
-        ToastAndroid.show('Berhasil memperbarui', ToastAndroid.SHORT);
-      }
+
       return true;
     } catch (e) {
       ToastAndroid.show(`Terjadi kesalahan: ${e.message}`, ToastAndroid.SHORT);
