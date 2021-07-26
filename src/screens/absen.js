@@ -194,7 +194,12 @@ export const Absen = ({route, nav}) => {
 
       if (checkAbsent != undefined) {
         if (checkAbsent.length == currentAbsentRecords.length) {
-          if (checkAbsent[checkAbsent.length - 1] != moment().format('L')) {
+          let x = checkAbsent[checkAbsent.length - 1]
+            .split('/')
+            .map(el => (el.length >= 2 ? el : '0' + el))
+            .join('/');
+
+          if (x != moment().format('L')) {
             setStatusText('Dosen belum memulai absensi');
           } else {
             setStatusText('Sudah Absen');
@@ -262,7 +267,10 @@ export const Absen = ({route, nav}) => {
     setCurLoc(false);
     // Cek status absen
     if (absentStatus)
-      return ToastAndroid.show('Anda sudah absen', ToastAndroid.SHORT);
+      return ToastAndroid.show(
+        'Absensi terbaru belum dimulai',
+        ToastAndroid.SHORT,
+      );
 
     // Cek mode absen
 
@@ -947,14 +955,15 @@ export const Absen = ({route, nav}) => {
               </Text>
             )}
           </Text>
-          {mhs?.trusted && (
+          {mhs?.trusted && trio.type == 'titip' && (
             <>
               <RadioForm
                 style={{marginTop: 20}}
                 buttonColor={'#119DA4'}
+                selectedButtonColor={'#119DA4'}
                 formHorizontal={true}
                 labelColor={'#AAAAAA'}
-                ini
+                selectedLabelColor={'#119DA4'}
                 radio_props={[
                   {label: 'Hadir', value: 'H'},
                   {label: 'Sakit', value: 'S'},

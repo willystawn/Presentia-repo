@@ -7,14 +7,16 @@ import {global} from '../styles/global';
 
 import {Accordion} from './accordion';
 
+//Card tugas
 export const CardTugas = ({
   category,
   title,
   content,
   created,
-  file,
-  url,
-  type,
+  file = '',
+  categoryOne,
+  url = '',
+  type = '',
   deadline,
   accorn = true,
 }) => {
@@ -24,7 +26,7 @@ export const CardTugas = ({
       (1000 * 3600 * 24),
   );
 
-  const fileName = file.length >= 30 ? file.slice(0, 30) + ' ...' : file;
+  const fileName = file?.length >= 30 ? file?.slice(0, 30) + ' ...' : file;
   const iconColor = estimatedDeadline <= 1 ? '#b51941' : '#aaa';
   const cardStyle =
     estimatedDeadline <= 1
@@ -32,7 +34,7 @@ export const CardTugas = ({
       : global.card;
 
   const fileContent = () => {
-    if (file) {
+    if (file?.length > 0) {
       return (
         <>
           <View style={global.divider} />
@@ -75,10 +77,13 @@ export const CardTugas = ({
 
   return (
     <>
-      {accorn && (
+      {accorn && (<>
+      
+      	{categoryOne && (
         <View style={global.wrapper}>
           <Text style={global.catTitle}>{category}</Text>
-        </View>
+        </View>)}
+        </>
       )}
       <View style={global.wrapper}>
         <View style={cardStyle}>

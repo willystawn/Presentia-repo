@@ -65,6 +65,7 @@ export const Tugas = ({route, nav}) => {
           .collection('task')
           .doc(main.instanceId)
           .collection('tugas')
+          .where('kelas', '==', mhs.kelas)
           .get();
         tugas = snapTugas.docs.map(doc => doc.data());
       } else {
@@ -94,11 +95,12 @@ export const Tugas = ({route, nav}) => {
       BackHandler.removeEventListener('hardwareBackPressc', backAction);
   }, []);
 
+  // Rendertugas
   const renderTugas = () =>
     stugas
       .sort((a, b) => {
-        let el = dateConvert(a, b);
-        return el[1] - el[0];
+        let el = dateConvert(a, b, true);
+        return el[0] - el[1];
       })
       .filter(el => {
         const deadlineReverse = el.deadline.split('/').reverse().join('/');
@@ -113,11 +115,12 @@ export const Tugas = ({route, nav}) => {
           el.title.toLowerCase().includes(query.toLowerCase()) ||
           el.category.toLowerCase().includes(query.toLowerCase()),
       )
-      .map(el => {
+      .map((el, id, arr) => {
         return (
           <CardTugas
             key={el.title}
             category={el.category}
+            categoryOne={el.category == arr[id - 1]?.category ? false : true}
             title={el.title}
             content={el.content}
             file={el.file}
@@ -171,7 +174,7 @@ export const Tugas = ({route, nav}) => {
                   paddingVertical: 0,
                   width: 'auto',
                 }}
-                placeholder="Cari disini..."
+                placeholder="Cari di sini..."
                 maxLength={25}
                 placeholderTextColor="#AAA"
                 ref={refInput}

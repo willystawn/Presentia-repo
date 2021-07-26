@@ -164,7 +164,7 @@ export const Pengumuman = ({route, nav}) => {
               </Text>
               <TextInput
                 style={{...global.cardLabel, fontSize: 15, padding: 0}}
-                placeholder="Cari disini..."
+                placeholder="Cari di sini..."
                 maxLength={25}
                 placeholderTextColor="#AAA"
                 ref={refInput2}
@@ -175,7 +175,7 @@ export const Pengumuman = ({route, nav}) => {
           </TouchableWithoutFeedback>
         </View>
         {pengumumanExist && renderPengumuman()}
-        {pengumumanExist.length == 0 && query2.length != 0 && (
+        {pengumumanExist.length == 0 && (
           <Empty
             msg={
               query2.length != 0

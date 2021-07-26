@@ -7,13 +7,13 @@ import { global } from '../styles/global';
 
 import { Accordion } from './accordion';
 
-export const CardPengumuman = ({ title, content, created, file, url, type, accorn=true }) => {
+export const CardPengumuman = ({ title, content, created, file = '', url = '', type = '', accorn=true }) => {
 
 
-  const fileName = file.length >= 30 ? file.slice(0, 30) + ' ...' : file
+  const fileName = file?.length >= 30 ? file?.slice(0, 30) + ' ...' : file
 
   const fileContent = () => {
-    if(file){
+    if(file?.length > 0){
       return (
         <>
           <View style={global.divider}/>

@@ -12,7 +12,6 @@ import {
 import PushNotification, {Importance} from 'react-native-push-notification';
 import NetInfo from '@react-native-community/netinfo';
 import {StackActions} from '@react-navigation/native';
-import messaging from '@react-native-firebase/messaging';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Modal from 'react-native-modal';
@@ -24,8 +23,9 @@ import {sha256} from 'react-native-sha256';
 import {global} from '../styles/global';
 import {Loading} from '../components/loading';
 
-import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import messaging from '@react-native-firebase/messaging';
 
 PushNotification.configure({
   onRegistrationError: function (err) {
@@ -155,7 +155,9 @@ export const Registrasi = ({nav}) => {
       .collection('task')
       .doc(instance.instanceId)
       .collection('tugas')
+      .where('kelas', '==', mhsKelas)
       .get();
+
     const tugas = snapTugas.docs.map(doc => doc.data());
 
     const snapPengumuman = await firestore()

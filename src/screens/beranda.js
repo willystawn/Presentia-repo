@@ -93,6 +93,7 @@ export const Beranda = ({route, nav}) => {
           .collection('task')
           .doc(main.instanceId)
           .collection('tugas')
+          .where('kelas', '==', mhs.kelas)
           .get();
         tugas = snapTugas.docs.map(doc => doc.data());
 
@@ -213,21 +214,6 @@ export const Beranda = ({route, nav}) => {
     if (waitContent) {
       setLoading(false);
     }
-
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      PushNotification.localNotification({
-        channelId: 'presentia',
-        invokeApp: true,
-        title: `Halo, ${data[0]}`,
-        message: 'Kamu mempunyai informasi baru. Ketuk untuk membuka',
-        userInfo: {},
-        playSound: true,
-        soundName: 'default',
-        number: 10,
-      });
-    });
-
-    return unsubscribe;
   }, []);
 
   useFocusEffect(
@@ -266,7 +252,8 @@ export const Beranda = ({route, nav}) => {
             <View style={global.card}>
               <Text style={global.cardTextGrey}>
                 Perangkat kamu telah dipercayai. Kamu bisa melakukan absensi
-                untuk mahasiswa lain yang terkendala perangkat.
+                untuk mahasiswa lain yang terkendala perangkat. Fitur titipan
+                akan tersedia saat jam perkuliahan dimulai.
               </Text>
             </View>
           )}

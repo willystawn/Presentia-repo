@@ -11,7 +11,7 @@ import {
 import {global} from '../styles/global';
 
 export const CardJadwal = ({data}) => {
-  const [accordionItem, setAccodionItem] = React.useState(data[0]);
+  const [accordionItem, setAccordionItem] = React.useState(data[0]);
   const [selected, setSelected] = React.useState(data[0].day);
 
   if (Platform.OS === 'android') {
@@ -48,7 +48,8 @@ export const CardJadwal = ({data}) => {
 
   const seeSchedule = el => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setAccodionItem(el);
+    setAccordionItem(el);
+    return;
   };
 
   const renderScheduleContent = () =>
