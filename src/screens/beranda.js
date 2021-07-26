@@ -27,7 +27,6 @@ import dateConvert from '../modules/dateConvert.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import messaging from '@react-native-firebase/messaging';
-import PushNotification from 'react-native-push-notification';
 import firestore from '@react-native-firebase/firestore';
 
 const getData = async key => {
@@ -35,6 +34,10 @@ const getData = async key => {
   const data = JSON.parse(val);
   return data;
 };
+
+messaging().setBackgroundMessageHandler(async remoteMessage => {
+  return;
+});
 
 export const Beranda = ({route, nav}) => {
   const [loading, setLoading] = useState(true);
@@ -214,6 +217,12 @@ export const Beranda = ({route, nav}) => {
     if (waitContent) {
       setLoading(false);
     }
+
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      return;
+    });
+
+    return unsubscribe;
   }, []);
 
   useFocusEffect(
