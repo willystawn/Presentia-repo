@@ -650,6 +650,7 @@ export const Absen = ({route, nav}) => {
     setAbsentStatus(true);
     setTrio({visible: false});
   };
+
   const handleTrioOnPress = type => {
     switch (type) {
       case 'sakit':
@@ -660,6 +661,7 @@ export const Absen = ({route, nav}) => {
         break;
       case 'online':
         absentOnline();
+        break;
       case 'titip':
         absentTitip();
       default:
