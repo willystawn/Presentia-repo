@@ -194,16 +194,22 @@ export const Absen = ({route, nav}) => {
 
       if (checkAbsent != undefined) {
         if (checkAbsent.length == currentAbsentRecords.length) {
-          let x = checkAbsent[checkAbsent.length - 1]
-            .split('/')
-            .map(el => (el.length >= 2 ? el : '0' + el))
-            .join('/');
+          let x;
+          if (checkAbsent[checkAbsent.length - 1]) {
+            x = checkAbsent[checkAbsent.length - 1]
+              .split('/')
+              .map(el => (el.length >= 2 ? el : '0' + el))
+              .join('/');
+          } else {
+            x = 0;
+          }
 
           if (x != moment().format('L')) {
             setStatusText('Dosen belum memulai absensi');
           } else {
             setStatusText('Sudah Absen');
           }
+
           setAbsening(true);
           setAbsentStatus(true);
           return true;
@@ -215,6 +221,7 @@ export const Absen = ({route, nav}) => {
 
       return true;
     } catch (e) {
+      console.log(e);
       ToastAndroid.show(`Terjadi kesalahan: ${e.message}`, ToastAndroid.SHORT);
       return false;
     }
@@ -336,6 +343,7 @@ export const Absen = ({route, nav}) => {
 
     setProgress(15);
     setCountDown(true);
+    let poss = {x: 0, y: 0};
     watchId.current = Geolocation.watchPosition(
       position => {
         if (position.mocked == true) {
@@ -343,7 +351,8 @@ export const Absen = ({route, nav}) => {
           ToastAndroid.show('GPS Palsu terdeteksi!', ToastAndroid.SHORT);
           return BackHandler.exitApp();
         }
-        setPos([position.coords.latitude, position.coords.longitude]);
+        poss.x = position.coords.latitude;
+        poss.y = position.coords.longitude;
       },
       error => {
         return ToastAndroid.show(
@@ -386,7 +395,7 @@ export const Absen = ({route, nav}) => {
         setProgress(50);
         setStatusText(step[3]);
         setTimeout(() => {
-          actualAbsent();
+          actualAbsent(poss.x, poss.y);
         }, 6000);
       }
     });
@@ -435,13 +444,14 @@ export const Absen = ({route, nav}) => {
     });
   };
 
-  const actualAbsent = () => {
+  const actualAbsent = (x, y) => {
     setStatusText(step[4]);
 
-    const last = inside(sinstansi.areaCoords, [pos[0], pos[1]]);
+    const last = inside(sinstansi.areaCoords, [x, y]);
     if (!last) {
       resetStatus();
       setStatusText('Diluar jangkauan area');
+      setPos([x, y]);
       return;
     }
 
@@ -664,6 +674,7 @@ export const Absen = ({route, nav}) => {
         break;
       case 'titip':
         absentTitip();
+        break;
       default:
         setTrio({visible: false});
         break;
