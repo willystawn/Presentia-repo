@@ -35,10 +35,6 @@ const getData = async key => {
   return data;
 };
 
-messaging().setBackgroundMessageHandler(async remoteMessage => {
-  return;
-});
-
 export const Beranda = ({route, nav}) => {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);

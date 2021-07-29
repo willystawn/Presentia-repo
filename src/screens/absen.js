@@ -744,8 +744,10 @@ export const Absen = ({route, nav}) => {
     if (!currentMatkul?.noAbsence) {
       return (
         <>
-          <Text style={global.absentTitle}>{currentMatkul?.name || ''}</Text>
-          <Text style={global.absentTime}>
+          <Text style={[global.absentTitle, {textAlign: 'center'}]}>
+            {currentMatkul?.name || ''}
+          </Text>
+          <Text style={[global.absentTime, {textAlign: 'center'}]}>
             {moment().format('dddd, Do MMMM YYYY')} •{' '}
             {currentMatkul?.start || ''} - {currentMatkul?.end || ''}
           </Text>

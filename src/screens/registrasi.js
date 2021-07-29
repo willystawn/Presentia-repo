@@ -185,13 +185,14 @@ export const Registrasi = ({nav}) => {
       .doc(mhsId)
       .get();
 
+    let topic = (instance.instanceId + mhsKelas).substring(0, 20);
     await messaging()
-      .subscribeToTopic(mhsKelas)
-      .then(() => console.log('Subscribed to mhs kelas!'));
+      .subscribeToTopic(topic)
+      .then(() => console.log(topic));
 
     await messaging()
       .subscribeToTopic(instance.instanceId)
-      .then(() => console.log('Subscribed to instansi'));
+      .then(() => console.log(instance.instanceId));
 
     const localAccount = await storeData('@deviceRegistered', mhs._data);
 
